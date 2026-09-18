@@ -9,10 +9,16 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 fun Application.configureDatabases() {
-    val url = environment.config.propertyOrNull("postgres.url")?.getString()
-        ?: "jdbc:postgresql://localhost:5432/match_up?currentSchema=public"
-    val user = environment.config.propertyOrNull("postgres.user")?.getString() ?: "myuser"
-    val password = environment.config.propertyOrNull("postgres.password")?.getString() ?: "myuser"
+    // Izvlačimo iz okruženja (Render/System) ili fallback na lokalne vrednosti
+    val dbHost = System.getenv("DB_HOST") ?: "localhost"
+    val dbPort = System.getenv("DB_PORT") ?: "5432"
+    val dbName = System.getenv("DB_NAME") ?: "match_up"
+    val user = System.getenv("DB_USER") ?: "postgres"
+    val password = System.getenv("DB_PASSWORD") ?: "Uzice10072002,"
+
+    // Supabase zahteva sslmode=require u JDBC URL-u
+    val sslMode = if (dbHost != "localhost") "?sslmode=require" else "?currentSchema=public"
+    val url = "jdbc:postgresql://$dbHost:$dbPort/$dbName$sslMode"
 
     log.info("Connecting to Postgres database at $url")
 
@@ -21,7 +27,7 @@ fun Application.configureDatabases() {
         jdbcUrl = url
         username = user
         this.password = password
-        maximumPoolSize = 10
+        maximumPoolSize = 5 // Smanjeno na 5 zbog Supabase Free Tier ograničenja
         isAutoCommit = false
         transactionIsolation = "TRANSACTION_REPEATABLE_READ"
         validate()
@@ -30,6 +36,5 @@ fun Application.configureDatabases() {
     Database.connect(HikariDataSource(config))
 }
 
-// Helper funkcija za asinhrono izvršavanje Exposed upita u korutinama
 suspend fun <T> dbQuery(block: suspend () -> T): T =
     newSuspendedTransaction(Dispatchers.IO) { block() }
