@@ -4,8 +4,8 @@ COPY --chown=gradle:gradle . /home/gradle/src
 WORKDIR /home/gradle/src
 RUN ./gradlew build -x test --no-daemon
 
-# 2. Faza pokretanja aplikacije
-FROM openjdk:17-slim
+# 2. Faza pokretanja - Zamenjen openjdk sa eclipse-temurin
+FROM eclipse-temurin:17-jre-alpine
 EXPOSE 8080
 COPY --from=build /home/gradle/src/build/libs/*-all.jar /app/ktor-app.jar
 ENTRYPOINT ["java", "-jar", "/app/ktor-app.jar"]
