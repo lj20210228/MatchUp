@@ -18,8 +18,7 @@ fun Application.configureDatabases() {
 
     // Supabase zahteva sslmode=require u JDBC URL-u
     val sslMode = if (dbHost != "localhost") "?sslmode=require" else "?currentSchema=public"
-    val url = "jdbc:postgresql://$dbHost:$dbPort/$dbName$sslMode"
-
+    val url = System.getenv("DATABASE_URL") ?: "jdbc:postgresql://localhost:5432/match_up?currentSchema=public"
     log.info("Connecting to Postgres database at $url")
 
     val config = HikariConfig().apply {
