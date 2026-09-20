@@ -1,29 +1,39 @@
 package com.example
 
-import io.ktor.server.application.*
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
-import io.ktor.server.response.*
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.jwt.jwt
 
 fun Application.configureSecurity() {
-    val jwtAudience = "jwt-audience"
-    val jwtDomain = "https://jwt-provider-domain/"
-    val jwtRealm = "ktor sample app"
-    val jwtSecret = "secret"
-    authentication {
-        jwt {
-            realm = jwtRealm
+    val jwtSecret = "matchup_secret_key_123"
+    val jwtIssuer = "http://0.0.0.0:8080/"
+    val jwtAudience = "matchup_users"
+
+    install(Authentication) {
+        jwt("auth-jwt") {
+            realm = "matchup"
+
             verifier(
-                JWT
-                    .require(Algorithm.HMAC256(jwtSecret))
+                JWT.require(Algorithm.HMAC256(jwtSecret))
                     .withAudience(jwtAudience)
-                    .withIssuer(jwtDomain)
+                    .withIssuer(jwtIssuer)
                     .build()
             )
+
             validate { credential ->
-                if (credential.payload.audience.contains(jwtAudience)) JWTPrincipal(credential.payload) else null
+                val userId = credential.payload
+                    .getClaim("userId")
+                    .asInt()
+
+                if (userId != null) {
+                    JWTPrincipal(credential.payload)
+                } else {
+                    null
+                }
             }
         }
     }

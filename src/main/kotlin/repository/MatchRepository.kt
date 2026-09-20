@@ -6,6 +6,9 @@ import com.example.db.MatchesTable
 import com.example.db.UsersTable
 import com.example.service.MatchService
 import org.jetbrains.exposed.sql.ResultRow
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.collections.filter
 
 class MatchRepository(private val matchService: MatchService = MatchService()) {
@@ -56,52 +59,43 @@ class MatchRepository(private val matchService: MatchService = MatchService()) {
         return deleted
     }
 
+    private fun makeDateLabel(dateTime: LocalDateTime): String {
+        val matchDate = dateTime.toLocalDate()
+        val today = LocalDate.now()
+
+        return when (matchDate) {
+            today -> "Danas"
+            today.plusDays(1) -> "Sutra"
+            else -> matchDate.format(
+                DateTimeFormatter.ofPattern("d. M. yyyy.")
+            )
+        }
+    }
     // Biznis logika kreiranja meča: priprema podataka i automatsko dodavanje hosta kao igrača
-    suspend fun createMatch(
-        sport: String,
-        sportEmoji: String,
-        timeLeft: String,
-        dateTimeStr: String,
-        dateLabel: String,
-        timeRange: String,
-        venue: String,
-        address: String,
-        lat: Double,
-        lng: Double,
-        distance: Double,
-        total: Int,
-        pricePerPerson: Int,
-        currency: String,
-        hostId: Int,
-        level: String,
-        levelSrb: String,
-        urgent: Boolean,
-        rulesList: List<String>
-    ): Int {
+    suspend fun createMatch(dto: MatchDto, hostId: Int): Int {
+         val isoFormatter = java.time.format.DateTimeFormatterBuilder()
+            .append(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            .optionalStart()
+            .appendOffsetId()
+            .optionalEnd()
+            .toFormatter()
+
+        val dateTime = java.time.LocalDateTime.parse(dto.dateTime, isoFormatter)
+        val calculatedDateLabel = makeDateLabel(dateTime)
 
         val newMatchId = matchService.insertMatch(
-            sport = sport,
-            sportEmoji = sportEmoji,
-            timeLeft = timeLeft,
-            dateTimeStr = dateTimeStr,
-            dateLabel = dateLabel,
-            timeRange = timeRange,
-            venue = venue,
-            address = address,
-            lat = lat,
-            lng = lng,
-            distance = distance,
-            total = total,
-            pricePerPerson = pricePerPerson,
-            currency = currency,
+            dto = dto,
             hostId = hostId,
-            level = level,
-            levelSrb = levelSrb,
-            urgent = urgent,
-            rulesJoined = rulesList
+            dateTime = dateTime,
+            dateLabel = calculatedDateLabel
         )
 
-        matchService.insertMatchPlayer(newMatchId, hostId, isHost = true)
+        matchService.insertMatchPlayer(
+            matchId = newMatchId,
+            userId = hostId,
+            isHost = true
+        )
+
         return newMatchId
     }
 

@@ -1,5 +1,6 @@
 package com.example.service
 
+import com.example.data.models.MatchDto
 import com.example.db.MatchPlayersTable
 import com.example.db.MatchesTable
 import com.example.db.UsersTable
@@ -93,50 +94,34 @@ class MatchService {
 
     // Insert novog meča
     suspend fun insertMatch(
-        sport: String,
-        sportEmoji: String,
-        timeLeft: String,
-        dateTimeStr: String,
-        dateLabel: String,
-        timeRange: String,
-        venue: String,
-        address: String,
-        lat: Double,
-        lng: Double,
-        distance: Double,
-        total: Int,
-        pricePerPerson: Int,
-        currency: String,
+        dto: MatchDto,
         hostId: Int,
-        level: String,
-        levelSrb: String,
-        urgent: Boolean,
-        rulesJoined: List<String>
+        dateTime: LocalDateTime,
+        dateLabel: String
     ): Int = dbQuery {
         MatchesTable.insert {
-            it[MatchesTable.sport] = sport
-            it[MatchesTable.sportEmoji] = sportEmoji
-            it[MatchesTable.timeLeft] = timeLeft
-            it[dateTime] = LocalDateTime.now() // Ili parsiran dateTimeStr
+            it[sport] = dto.sport
+            it[sportEmoji] = dto.sportEmoji
+            it[timeLeft] = dto.timeLeft
+            it[MatchesTable.dateTime] = dateTime
             it[MatchesTable.dateLabel] = dateLabel
-            it[MatchesTable.timeRange] = timeRange
-            it[MatchesTable.venue] = venue
-            it[MatchesTable.address] = address
-            it[MatchesTable.lat] = lat
-            it[MatchesTable.lng] = lng
-            it[MatchesTable.distance] = distance
+            it[timeRange] = dto.timeRange
+            it[venue] = dto.venue
+            it[address] = dto.address
+            it[lat] = dto.lat
+            it[lng] = dto.lng
+            it[distance] = dto.distance
             it[joined] = 1
-            it[MatchesTable.total] = total
-            it[MatchesTable.pricePerPerson] = pricePerPerson
-            it[MatchesTable.currency] = currency
+            it[total] = dto.total
+            it[pricePerPerson] = dto.pricePerPerson
+            it[currency] = dto.currency
             it[MatchesTable.hostId] = hostId
-            it[MatchesTable.level] = level
-            it[MatchesTable.levelSrb] = levelSrb
-            it[MatchesTable.urgent] = urgent
-            it[rules] = rulesJoined
+            it[level] = dto.level
+            it[levelSrb] = dto.levelSrb
+            it[urgent] = dto.urgent
+            it[rules] = dto.rules
         } get MatchesTable.id
     }
-
     // Dohvatanje mečeva na koje je korisnik prijavljen
     suspend fun getJoinedMatches(userId: Int): List<ResultRow> = dbQuery {
         (MatchesTable innerJoin MatchPlayersTable)
