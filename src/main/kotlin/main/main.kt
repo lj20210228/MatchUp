@@ -3,6 +3,8 @@ package com.example.main
 import com.example.configureHttp
 import com.example.configureRouting
 import com.example.configureSecurity
+import com.example.db.ChatMessagesTable
+import com.example.db.ChatsTable
 import com.example.db.MatchPlayersTable
 import com.example.db.MatchesTable
 import com.example.db.UsersTable
@@ -38,7 +40,7 @@ fun Application.module() {
     // 2. WebSockets konfiguracija za chat
     install(WebSockets) {
         pingPeriod = 15.seconds
-        timeout = 15.seconds
+        timeout = 30.seconds
         maxFrameSize = Long.MAX_VALUE
         masking = false
     }
@@ -53,7 +55,9 @@ fun Application.module() {
         SchemaUtils.create(
             UsersTable,
             MatchesTable,
-            MatchPlayersTable
+            MatchPlayersTable,
+            ChatsTable,
+            ChatMessagesTable
         )
     }
 

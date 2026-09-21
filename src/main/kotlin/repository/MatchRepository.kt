@@ -113,7 +113,7 @@ class MatchRepository(private val matchService: MatchService = MatchService()) {
         val rows = matchService.getMatchPlayers(matchId)
         return rows.map { row ->
             UserDto(
-                id = row[UsersTable.id],
+                id = row[UsersTable.id].value.toInt(),
                 name = row[UsersTable.name],
                 email = row[UsersTable.email],
                 city = row[UsersTable.city],
@@ -126,8 +126,8 @@ class MatchRepository(private val matchService: MatchService = MatchService()) {
 
     // Biznis logika konverzije baze u DTO objekat (Mapiranje podataka)
     private suspend fun mapToMatchDto(row: ResultRow, currentUserId: Int?): MatchDto {
-        val matchId = row[MatchesTable.id]
-        val hostId = row[MatchesTable.hostId]
+        val matchId = row[MatchesTable.id].value.toInt()
+        val hostId = row[MatchesTable.hostId].value.toInt()
         val hostRow = matchService.getHostUser(hostId)
 
         val hostName = hostRow?.get(UsersTable.name) ?: "Nepoznat"

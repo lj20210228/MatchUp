@@ -1,6 +1,7 @@
 package com.example
 
 import com.example.routes.configureAuthRoutes
+import com.example.routes.configureChatRoutes
 import com.example.routes.configureMatchRoutes
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
@@ -22,6 +23,8 @@ fun Application.configureRouting() {
         // Sve unutar ovog bloka zahteva validan Bearer JWT.
         authenticate("auth-jwt") {
             configureMatchRoutes()
+            configureChatRoutes()
+
 
             get("/") {
                 call.respondText("Hello, World!")
@@ -31,23 +34,8 @@ fun Application.configureRouting() {
                 call.respond(mapOf("hello" to "world"))
             }
 
-            webSocket("/ws") {
-                for (frame in incoming) {
-                    if (frame is Frame.Text) {
-                        val text = frame.readText()
-                        outgoing.send(Frame.Text("YOU SAID: $text"))
 
-                        if (text.equals("bye", ignoreCase = true)) {
-                            close(
-                                CloseReason(
-                                    CloseReason.Codes.NORMAL,
-                                    "Client said BYE"
-                                )
-                            )
-                        }
-                    }
-                }
-            }
         }
+
     }
 }

@@ -14,7 +14,7 @@ class UserService {
             .where { (UsersTable.email eq email) and (UsersTable.passwordHash eq passwordHash) }
             .map { row ->
                 UserDto(
-                    id = row[UsersTable.id],
+                    id = row[UsersTable.id].value.toInt(),
                     name = row[UsersTable.name],
                     email = row[UsersTable.email],
                     city = row[UsersTable.city],
@@ -31,7 +31,7 @@ class UserService {
             .where { UsersTable.email eq email }
             .map { row ->
                 UserDto(
-                    id = row[UsersTable.id],
+                    id = row[UsersTable.id].value.toInt(),
                     name = row[UsersTable.name],
                     email = row[UsersTable.email],
                     city = row[UsersTable.city],
@@ -61,7 +61,7 @@ class UserService {
         } get UsersTable.id
 
         UserDto(
-            id = insertedId,
+            id = insertedId.value.toInt(),
             name = name,
             email = email,
             city = city,

@@ -120,7 +120,7 @@ class MatchService {
             it[levelSrb] = dto.levelSrb
             it[urgent] = dto.urgent
             it[rules] = dto.rules
-        } get MatchesTable.id
+        } [MatchesTable.id].value
     }
     // Dohvatanje mečeva na koje je korisnik prijavljen
     suspend fun getJoinedMatches(userId: Int): List<ResultRow> = dbQuery {

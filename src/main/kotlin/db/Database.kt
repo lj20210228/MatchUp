@@ -9,7 +9,7 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 
 fun Application.configureDatabases() {
     // Izvlačimo iz okruženja (Render/Supabase) ili koristimo fallback za lokalni rad
-    val dbHost = System.getenv("DB_HOST") ?: "localhost"
+   /* val dbHost = System.getenv("DB_HOST") ?: "localhost"
     val dbPort = System.getenv("DB_PORT") ?: "5432"
     val dbName = System.getenv("DB_NAME") ?: "match_up"
     val user = System.getenv("DB_USER") ?: "postgres"
@@ -33,6 +33,23 @@ fun Application.configureDatabases() {
         this.password = password
         // Ograničavamo pool size (5 za Supabase produkciju, 10 ako je lokalno)
         maximumPoolSize = if (dbHost != "localhost") 5 else 10
+        isAutoCommit = false
+        transactionIsolation = "TRANSACTION_REPEATABLE_READ"
+        validate()
+    }*/
+    val url = environment.config.propertyOrNull("postgres.url")?.getString()
+        ?: "jdbc:postgresql://localhost:5432/match_up?currentSchema=public"
+    val user = environment.config.propertyOrNull("postgres.user")?.getString() ?: "myuser"
+    val password = environment.config.propertyOrNull("postgres.password")?.getString() ?: "myuser"
+
+    log.info("Connecting to Postgres database at $url")
+
+    val config = HikariConfig().apply {
+        driverClassName = "org.postgresql.Driver"
+        jdbcUrl = url
+        username = user
+        this.password = password
+        maximumPoolSize = 10
         isAutoCommit = false
         transactionIsolation = "TRANSACTION_REPEATABLE_READ"
         validate()

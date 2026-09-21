@@ -2,6 +2,9 @@ package com.example
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import io.ktor.http.HttpHeaders
+import io.ktor.http.auth.HttpAuthHeader
+import io.ktor.http.auth.parseAuthorizationHeader
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
@@ -16,6 +19,23 @@ fun Application.configureSecurity() {
     install(Authentication) {
         jwt("auth-jwt") {
             realm = "matchup"
+
+            authHeader { call ->
+                val queryToken = call.request.queryParameters["token"]
+
+                if (!queryToken.isNullOrBlank()) {
+                    HttpAuthHeader.Single("Bearer", queryToken)
+                } else {
+                    val authorization =
+                        call.request.headers[HttpHeaders.Authorization]
+
+                    authorization?.let {
+                        runCatching {
+                            parseAuthorizationHeader(it)
+                        }.getOrNull()
+                    }
+                }
+            }
 
             verifier(
                 JWT.require(Algorithm.HMAC256(jwtSecret))
