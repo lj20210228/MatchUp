@@ -38,7 +38,7 @@ fun Application.configureDatabases() {
         validate()
     }
     /*
-    
+
     val url = environment.config.propertyOrNull("postgres.url")?.getString()
         ?: "jdbc:postgresql://localhost:5432/match_up?currentSchema=public"
     val user = environment.config.propertyOrNull("postgres.user")?.getString() ?: "myuser"
