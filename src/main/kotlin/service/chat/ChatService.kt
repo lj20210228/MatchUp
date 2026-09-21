@@ -4,10 +4,13 @@ package com.example.service.chat
 import com.example.data.models.MessageEntity
 import com.example.db.ChatMessagesTable
 import com.example.db.ChatsTable
+import com.example.db.MatchPlayersTable
 import com.example.db.UsersTable
 import com.example.db.dbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.insertAndGetId // ili insertGetId
+import kotlin.collections.emptyList
+
 // Sirovi entiteti iz baze (mapiraju tabele)
 data class ChatEntity(
     val id: Int,
@@ -102,5 +105,33 @@ class ChatService {
             text = text,
             createdAt = time
         )
+    }
+
+    suspend fun getChatsForUser(currentUserId: Int): List<ChatEntity> = dbQuery {
+        val matchIds = MatchPlayersTable
+            .select {
+                MatchPlayersTable.userId eq currentUserId
+            }
+            .map {
+                it[MatchPlayersTable.matchId]
+            }
+            .distinct()
+
+        if (matchIds.isEmpty()) {
+            return@dbQuery emptyList()
+        }
+
+        ChatsTable
+            .select {
+                ChatsTable.matchId inList matchIds
+            }
+            .map { row ->
+                ChatEntity(
+                    id = row[ChatsTable.id].value,
+                    matchId = row[ChatsTable.matchId].value,
+                    name = row[ChatsTable.name],
+                    unread = 0
+                )
+            }
     }
 }

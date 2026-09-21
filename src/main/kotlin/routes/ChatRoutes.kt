@@ -28,6 +28,17 @@ fun Route.configureChatRoutes() {
     val chatRepository = ChatRepository()
 
     route("/api/chats") {
+        get {
+            val userId = call.principal<JWTPrincipal>()
+                ?.payload
+                ?.getClaim("userId")
+                ?.asInt()
+                ?: return@get call.respond(HttpStatusCode.Unauthorized)
+
+            val chats = chatRepository.getUserChats(userId)
+
+            call.respond(HttpStatusCode.OK, chats)
+        }
         get("/{matchId}/messages") {
             val matchId = call.parameters["matchId"]?.toIntOrNull()
                 ?: return@get call.respond(

@@ -1,6 +1,7 @@
 package com.example.repository
 
 
+import com.example.service.chat.ChatEntity
 import com.example.service.chat.ChatMessageEntity
 import com.example.service.chat.ChatService
 import kotlinx.serialization.Serializable
@@ -75,5 +76,9 @@ class ChatRepository(
             text = entity.text,
             time = entity.createdAt
         )
+    }
+
+    suspend fun getUserChats(userId: Int): List<ChatEntity> {
+            return chatService.getChatsForUser(userId)
     }
 }

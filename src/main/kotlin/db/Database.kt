@@ -9,7 +9,7 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 
 fun Application.configureDatabases() {
     // Izvlačimo iz okruženja (Render/Supabase) ili koristimo fallback za lokalni rad
-    val dbHost = System.getenv("DB_HOST") ?: "localhost"
+   /* val dbHost = System.getenv("DB_HOST") ?: "localhost"
     val dbPort = System.getenv("DB_PORT") ?: "5432"
     val dbName = System.getenv("DB_NAME") ?: "match_up"
     val user = System.getenv("DB_USER") ?: "postgres"
@@ -36,8 +36,8 @@ fun Application.configureDatabases() {
         isAutoCommit = false
         transactionIsolation = "TRANSACTION_REPEATABLE_READ"
         validate()
-    }
-    /*
+    }*/
+
 
     val url = environment.config.propertyOrNull("postgres.url")?.getString()
         ?: "jdbc:postgresql://localhost:5432/match_up?currentSchema=public"
@@ -56,7 +56,7 @@ fun Application.configureDatabases() {
         transactionIsolation = "TRANSACTION_REPEATABLE_READ"
         validate()
     }
-*/
+
     Database.connect(HikariDataSource(config))
 }
 
