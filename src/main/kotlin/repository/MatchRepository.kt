@@ -5,13 +5,17 @@ import com.example.data.models.UserDto
 import com.example.db.MatchesTable
 import com.example.db.UsersTable
 import com.example.service.MatchService
+import com.example.service.WebPushService
+import com.example.service.chat.ChatService
 import org.jetbrains.exposed.sql.ResultRow
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.collections.filter
 
-class MatchRepository(private val matchService: MatchService = MatchService()) {
+class MatchRepository(private val matchService: MatchService = MatchService(),
+    private val chatService: ChatService= ChatService()
+) {
 
     // Dohvatanje feed-a sa biznis opcijom "onlyAvailable" (samo nepopunjeni mečevi)
     suspend fun getFeedMatches(
@@ -46,6 +50,7 @@ class MatchRepository(private val matchService: MatchService = MatchService()) {
         val inserted = matchService.insertMatchPlayer(matchId, userId, isHost = false)
         if (inserted) {
             matchService.updateJoinedCount(matchId, delta = 1)
+            chatService.getOrCreateChatForMatch(matchId,"")
         }
         return inserted
     }
@@ -95,7 +100,12 @@ class MatchRepository(private val matchService: MatchService = MatchService()) {
             userId = hostId,
             isHost = true
         )
-
+        chatService.getOrCreateChatForMatch(matchId = newMatchId,dto.venue)
+        WebPushService.notifyUsersAboutNewMatch(
+            hostId = hostId,
+            sport = dto.sport,
+            venue = dto.venue
+        )
         return newMatchId
     }
 

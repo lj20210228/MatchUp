@@ -1,6 +1,5 @@
 package com.example.repository
 
-
 import com.example.service.chat.ChatEntity
 import com.example.service.chat.ChatMessageEntity
 import com.example.service.chat.ChatService
@@ -22,43 +21,57 @@ class ChatRepository(
     private val chatService: ChatService = ChatService()
 ) {
 
-    // Biznis logika: Učitavanje istorije poruka i formatiranje u DTO
-    suspend fun getChatHistory(matchId: Int, matchName: String, currentUserId: Int): List<MessageResponse> {
-        val chat = chatService.getOrCreateChatForMatch(matchId, matchName)
-        val messageEntities = chatService.getMessagesByChatId(chat.id)
+    // Dohvatanje istorije direktno po chatId-u
+    suspend fun getChatHistory(
+        chatId: Int,
+        currentUserId: Int
+    ): List<MessageResponse> {
+        val messageEntities = chatService.getMessagesByChatId(chatId)
+
+        // Odmah označavamo da je korisnik pročitao poruke do poslednje
+        chatService.markChatAsRead(
+            chatId = chatId,
+            userId = currentUserId
+        )
 
         return messageEntities.map { entity ->
             mapToResponse(entity, currentUserId)
         }
     }
 
-    // Biznis logika: Obrada nove dolazne poruke sa frontenda i čuvanje
+    // Čuvanje nove poruke
     suspend fun processAndSaveMessage(
-        matchId: Int,
-        matchName: String,
+        chatId: Int,
         senderId: Int,
         text: String
     ): MessageResponse {
         val cleanText = text.trim()
         require(cleanText.isNotEmpty()) { "Poruka ne može biti prazna" }
 
-        val chat = chatService.getOrCreateChatForMatch(matchId, matchName)
-
-        // Generisanje formata vremena "HH:mm"
         val currentTime = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
 
         val savedEntity = chatService.insertMessage(
-            chatId = chat.id,
+            chatId = chatId,
             type = "user",
             senderId = senderId,
             text = cleanText,
             time = currentTime
         )
 
+        // Pošiljalac automatski označava čat kao pročitan za sebe
+        chatService.markChatAsRead(chatId = chatId, userId = senderId)
+
         return mapToResponse(savedEntity, currentUserId = senderId)
     }
 
-    // Biznis logika: Određivanje da li je poruka "user", "other" ili "system"
+    suspend fun markAsRead(chatId: Int, userId: Int) {
+        chatService.markChatAsRead(chatId, userId)
+    }
+
+    suspend fun getUserChats(userId: Int): List<ChatEntity> {
+        return chatService.getChatsForUser(userId)
+    }
+
     private fun mapToResponse(entity: ChatMessageEntity, currentUserId: Int): MessageResponse {
         val calculatedType = when {
             entity.type == "system" -> "system"
@@ -76,9 +89,5 @@ class ChatRepository(
             text = entity.text,
             time = entity.createdAt
         )
-    }
-
-    suspend fun getUserChats(userId: Int): List<ChatEntity> {
-            return chatService.getChatsForUser(userId)
     }
 }

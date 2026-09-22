@@ -7,16 +7,23 @@ import com.example.db.ChatsTable
 import com.example.db.MatchPlayersTable
 import com.example.db.UsersTable
 import com.example.db.dbQuery
+import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.insertAndGetId // ili insertGetId
 import kotlin.collections.emptyList
+import com.example.db.ChatReadStatesTable
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNull
 
 // Sirovi entiteti iz baze (mapiraju tabele)
+@Serializable
 data class ChatEntity(
     val id: Int,
     val matchId: Int,
     val name: String,
-    val unread: Int
+    val unread: Int,
+
 )
 
 data class ChatMessageEntity(
@@ -109,12 +116,8 @@ class ChatService {
 
     suspend fun getChatsForUser(currentUserId: Int): List<ChatEntity> = dbQuery {
         val matchIds = MatchPlayersTable
-            .select {
-                MatchPlayersTable.userId eq currentUserId
-            }
-            .map {
-                it[MatchPlayersTable.matchId]
-            }
+            .select { MatchPlayersTable.userId eq currentUserId }
+            .map { it[MatchPlayersTable.matchId] }
             .distinct()
 
         if (matchIds.isEmpty()) {
@@ -122,16 +125,76 @@ class ChatService {
         }
 
         ChatsTable
-            .select {
-                ChatsTable.matchId inList matchIds
-            }
+            .select { ChatsTable.matchId inList matchIds }
             .map { row ->
+                val chatId = row[ChatsTable.id].value
+
+                val readState = ChatReadStatesTable.select {
+                    (ChatReadStatesTable.chatId eq chatId) and
+                            (ChatReadStatesTable.userId eq currentUserId)
+                }.singleOrNull()
+
+                val lastReadMessageId =
+                    readState?.get(ChatReadStatesTable.lastReadMessageId) ?: 0
+
+                val unreadCount = ChatMessagesTable.select {
+                    (ChatMessagesTable.chatId eq chatId) and
+                            (ChatMessagesTable.id greater lastReadMessageId) and
+                            (
+                                    ChatMessagesTable.senderId.isNull() or
+                                            (ChatMessagesTable.senderId neq currentUserId)
+                                    )
+                }.count().toInt()
+
                 ChatEntity(
-                    id = row[ChatsTable.id].value,
+                    id = chatId,
                     matchId = row[ChatsTable.matchId].value,
                     name = row[ChatsTable.name],
-                    unread = 0
+                    unread = unreadCount
                 )
             }
+    }
+    suspend fun getUnreadCount(chatId: Int, userId: Int): Int = dbQuery {
+        val readState = ChatReadStatesTable.select {
+            (ChatReadStatesTable.chatId eq chatId) and
+                    (ChatReadStatesTable.userId eq userId)
+        }.singleOrNull()
+
+        val lastReadMessageId = readState?.get(ChatReadStatesTable.lastReadMessageId) ?: 0
+
+        ChatMessagesTable.select {
+            (ChatMessagesTable.chatId eq chatId) and
+                    (ChatMessagesTable.id greater lastReadMessageId) and
+                    (
+                            ChatMessagesTable.senderId.isNull() or
+                                    (ChatMessagesTable.senderId neq userId)
+                            )
+        }.count().toInt()
+    }
+
+    suspend fun markChatAsRead(chatId: Int, userId: Int) = dbQuery {
+        val lastMessageId = ChatMessagesTable
+            .select { ChatMessagesTable.chatId eq chatId }
+            .orderBy(ChatMessagesTable.id to SortOrder.DESC)
+            .limit(1)
+            .singleOrNull()
+            ?.get(ChatMessagesTable.id)
+            ?.value
+            ?: return@dbQuery
+
+        val updatedRows = ChatReadStatesTable.update({
+            (ChatReadStatesTable.chatId eq chatId) and
+                    (ChatReadStatesTable.userId eq userId)
+        }) {
+            it[lastReadMessageId] = lastMessageId
+        }
+
+        if (updatedRows == 0) {
+            ChatReadStatesTable.insert {
+                it[ChatReadStatesTable.chatId] = chatId
+                it[ChatReadStatesTable.userId] = userId
+                it[ChatReadStatesTable.lastReadMessageId] = lastMessageId
+            }
+        }
     }
 }

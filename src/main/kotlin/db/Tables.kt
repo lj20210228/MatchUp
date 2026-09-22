@@ -89,3 +89,23 @@ object MatchPlayersTable : Table("match_players") {
 
     override val primaryKey = PrimaryKey(matchId, userId)
 }
+object ChatReadStatesTable : IntIdTable("chat_read_states") {
+    val chatId = reference("chat_id", ChatsTable)
+    val userId = reference("user_id", UsersTable)
+    val lastReadMessageId = integer("last_read_message_id").nullable()
+    val lastReadAt = varchar("last_read_at", 50).nullable()
+
+    init {
+        uniqueIndex(chatId, userId)
+    }
+}
+
+object PushSubscriptionsTable : Table("push_subscriptions") {
+    val id = integer("id").autoIncrement()
+    val userId = integer("user_id")
+    val endpoint = text("endpoint").uniqueIndex()
+    val p256dh = text("p256dh")
+    val auth = text("auth")
+
+    override val primaryKey = PrimaryKey(id)
+}

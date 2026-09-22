@@ -4,9 +4,11 @@ import com.example.configureHttp
 import com.example.configureRouting
 import com.example.configureSecurity
 import com.example.db.ChatMessagesTable
+import com.example.db.ChatReadStatesTable
 import com.example.db.ChatsTable
 import com.example.db.MatchPlayersTable
 import com.example.db.MatchesTable
+import com.example.db.PushSubscriptionsTable
 import com.example.db.UsersTable
 import com.example.db.configureDatabases
 import com.example.db.dbQuery
@@ -26,8 +28,8 @@ import kotlin.time.Duration.Companion.seconds
 
 fun main(args: Array<String>) {
     // Render dodeljuje port dinamički preko PORT varijable okruženja
-    val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
-   // val port=8080
+   // val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
+    val port=8080
     embeddedServer(Netty, port = port, host = "0.0.0.0", module = Application::module)
         .start(wait = true)
 }
@@ -57,7 +59,9 @@ fun Application.module() {
             MatchesTable,
             MatchPlayersTable,
             ChatsTable,
-            ChatMessagesTable
+            ChatMessagesTable,
+            ChatReadStatesTable,
+            PushSubscriptionsTable
         )
     }
 
